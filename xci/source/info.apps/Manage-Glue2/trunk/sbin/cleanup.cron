@@ -1,0 +1,1 @@
+00 6 * * 0 /bin/bash -l -c "/soft/warehouse-1.0/trunk/apps/ManageGlue2/cleanup.sh"
