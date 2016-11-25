@@ -9,8 +9,8 @@
     "X509_CACERTS": "/path/to/pem/",
     "X509_CERT": "./cert.pem",
     "X509_KEY": "./key.pem",
-    "LOG_FILE": "/Users/navarro/warehouse-1.0/run/route_glue2.log",
+    "LOG_FILE": "/Users/navarro/warehouse-apps-1.0/Manage-Glue2/var/route_glue2.log",
     "LOG_LEVEL": "debug",
-    "RUN_DIR": "/Users/navarro/warehouse-1.0/run",
-    "PID_FILE": "/Users/navarro/warehouse-1.0/run/route_glue2.pid"
+    "RUN_DIR": "/Users/navarro/warehouse-apps-1.0/Manage-Glue2/var",
+    "PID_FILE": "/Users/navarro/warehouse-apps-1.0/Manage-Glue2/var/route_glue2.pid"
 }

@@ -1,4 +1,4 @@
 #!/bin/bash
-export DJANGO_CONF=/soft/warehouse-1.0/conf/settings_jp1.conf
+export DJANGO_CONF=/soft/warehouse-apps-1.0/Manage-Glue2/conf/settings_jp1.conf
 export PYTHONPATH=/Users/navarro/svn/xd/xci/source/info.apps/Manage-Glue2/trunk/:/Users/navarro/svn/xd/xci/source/info.warehouse/trunk/django_xsede_warehouse
 python /Users/navarro/svn/xd/xci/source/info.apps/Manage-Glue2/trunk/bin/route_glue2.py ${@:1}

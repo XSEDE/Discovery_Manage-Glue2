@@ -1,1 +1,1 @@
-00 6 * * 0 /bin/bash -l -c "/soft/warehouse-1.0/trunk/apps/ManageGlue2/cleanup.sh"
+00 6 * * 0 /bin/bash -l -c "/soft/warehouse-apps-1.0/Manage-Glue2/PROD/bin/cleanup.sh"
