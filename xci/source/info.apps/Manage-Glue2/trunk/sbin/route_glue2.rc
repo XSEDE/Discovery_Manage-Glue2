@@ -33,26 +33,26 @@ export DJANGO_SETTINGS_MODULE=xsede_warehouse.settings
 do_start () {
     echo -n "Starting $DAEMON_NAME:"
     if [ `id -u` = 0 ] ; then
-        su software -s /bin/sh -c "$PYTHON $DAEMON_BIN start $DAEMON_OPTS"
+        su $DAEMON_USER -s /bin/sh -c "$PYTHON $DAEMON_BIN start $DAEMON_OPTS"
         RETVAL=$?
-    elif [ `id -u` = `id -u software` ] ; then
+    elif [ `id -u` = `id -u $DAEMON_USER` ] ; then
         $PYTHON $DAEMON_BIN start $DAEMON_OPTS
         RETVAL=$?
     else
-        echo "Only root or software should run $DAEMON_BIN"
+        echo "Only root or $DAEMON_USER should run $DAEMON_BIN"
         RETVAL=99
     fi
 }
 do_stop () {
     echo -n "Stopping $DAEMON_NAME:"
     if [ `id -u` = 0 ] ; then
-        su software -s /bin/sh -c "$PYTHON $DAEMON_BIN stop $DAEMON_OPTS"
+        su $DAEMON_USER -s /bin/sh -c "$PYTHON $DAEMON_BIN stop $DAEMON_OPTS"
         RETVAL=$?
-    elif [ `id -u` = `id -u software` ] ; then
+    elif [ `id -u` = `id -u $DAEMON_USER` ] ; then
         $PYTHON $DAEMON_BIN stop $DAEMON_OPTS
         RETVAL=$?
     else
-	echo "Only root or software should run $DAEMON_BIN"
+	echo "Only root or $DAEMON_USER should run $DAEMON_BIN"
         RETVAL=99
     fi
 }
