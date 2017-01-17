@@ -26,6 +26,7 @@ django.setup()
 from django.utils.dateparse import parse_datetime
 from glue2_db.models import *
 from glue2_provider.process import Glue2NewDocument, StatsSummary
+from processing_status.process import ProcessingActivity
 from xsede_warehouse.exceptions import ProcessingException
 
 from daemon import runner
@@ -285,6 +286,10 @@ class Route_Glue2():
             return
         
         receivedts = st
+        
+        pa_id = '{}:{}'.format(doctype, resourceid)
+        pa = ProcessingActivity('route_glue2.py direct', pa_id, doctype, resourceid)
+
         try:
             model = EntityHistory(DocumentType=doctype, ResourceID=resourceid, ReceivedTime=receivedts, EntityJSON=glue2_obj)
             model.save()
@@ -293,10 +298,12 @@ class Route_Glue2():
         except (ValidationError) as e:
             self.logger.error('Exception on GLUE2 EntityHistory DocType=%s, ResourceID=%s: %s' % \
                         (model.DocumentType, model.ResourceID, e.error_list))
+            pa.FinishActivity('EntityHistory ValidationError', e.error_list)
             return
         except (DataError, IntegrityError) as e:
             self.logger.error('Exception on GLUE2 EntityHistory (DocType=%s, ResourceID=%s): %s' % \
                         (model.DocumentType, model.ResourceID, e.error_list))
+            pa.FinishActivity('EntityHistory DataError|IntegrityError', e.error_list)
             return
     
         g2doc = Glue2NewDocument(doctype, resourceid, receivedts, 'EntityHistory.ID=%s' % model.ID)
@@ -304,10 +311,12 @@ class Route_Glue2():
             response = g2doc.process(glue2_obj)
 #           self.logger.info('RESP exchange=%s, routing_key=%s, size=%s dest=WAREHOUSE status=%s' %
 #                           (doctype, resourceid, len(message_body), 'PROCESSED' ) )
+            pa.FinishActivity('0', 'EntityHistory.ID={}'.format(model.ID))
             return
         except ProcessingException, e:
             self.logger.info('RESP exchange=%s, routing_key=%s, size=%s dest=WAREHOUSE status=%s' %
                             (doctype, resourceid, len(message_body), (e.response + ';' + e.status) ) )
+            pa.FinishActivity('Glue2 ProcessingException', 'status={}; response={}'.format(e.status, e.response))
             return
 
     def dest_restapi(self, st, type, resource, message_body):
