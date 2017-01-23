@@ -269,9 +269,14 @@ class Route_Glue2():
             fd.close()
 
     def dest_warehouse(self, st, doctype, resourceid, message_body):
+        receivedts = st
+        pa_id = '{}:{}'.format(doctype, resourceid)
+        pa = ProcessingActivity('route_glue2.py', 'dest_warehouse', pa_id, doctype, resourceid)
+        
         if doctype not in ['glue2.applications', 'glue2.compute', 'glue2.computing_activities']:
             self.logger.info('Ignoring DocType (DocType=%s, ResourceID=%s, size=%s)' % \
                              (doctype, resourceid, len(message_body)))
+            pa.FinishActivity('ignored', 'Ignoring DocType=' + doctype)
             return
         
         try:
@@ -279,16 +284,13 @@ class Route_Glue2():
         except ValueError, e:
             self.logger.error('Error parsing DocType (DocType=%s, ResourceID=%s, size=%s)' % \
                               (doctype, resourceid, len(message_body)))
+            pa.FinishActivity('document parsing error', e.error_list)
             return
         if 'ID' in glue2_obj and glue2_obj['ID'].startswith('urn:glue2:ComputingActivity:'):
             self.logger.debug('Ignoring DocType (DocType=%s, ResourceID=%s) actually glue2.computing_activity' % \
                        (doctype, resourceid))
+            pa.FinishActivity('ignored', 'Ignoring DocType=' + doctype)
             return
-        
-        receivedts = st
-        
-        pa_id = '{}:{}'.format(doctype, resourceid)
-        pa = ProcessingActivity('route_glue2.py direct', pa_id, doctype, resourceid)
 
         try:
             model = EntityHistory(DocumentType=doctype, ResourceID=resourceid, ReceivedTime=receivedts, EntityJSON=glue2_obj)

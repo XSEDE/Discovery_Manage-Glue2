@@ -48,6 +48,11 @@ delete from glue2.glue2_db_location
   where "CreationTime" < current_timestamp - interval '28 days';
 vacuum analyze glue2.glue2_db_location;
 
+\qecho Purging older than 28 days from glue2.monitoring_db_testresult
+delete from glue2.monitoring_db_testresult
+  where "CreationTime" < current_timestamp - interval '28 days';
+  vacuum analyze glue2.monitoring_db_testresult;
+
 \qecho Purging older than 90 days from glue2.glue2_db_entityhistory
 delete from glue2.glue2_db_entityhistory
   where "ReceivedTime" < current_timestamp - interval '90 days';
