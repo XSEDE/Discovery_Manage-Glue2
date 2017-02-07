@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 # Route GLUE2 messages from a source (amqp, file, directory) to a destination (print, directory, api)
+from __future__ import print_function
+from __future__ import print_function
 import os
 import pwd
 import re
@@ -10,16 +12,19 @@ import logging
 import logging.handlers
 import signal
 import datetime
-from datetime import datetime
 from time import sleep
 import base64
 import amqp
-import httplib
 import json
 import socket
 import ssl
 from ssl import _create_unverified_context
 import shutil
+
+try:
+    import http.client as httplib
+except ImportError:
+    import httplib
 
 import django
 django.setup()
@@ -72,12 +77,12 @@ class Route_Glue2():
             with open(config_file, 'r') as file:
                 conf=file.read()
                 file.close()
-        except IOError, e:
+        except IOError as e:
             raise
         try:
             self.config = json.loads(conf)
-        except ValueError, e:
-            print 'Error "%s" parsing config=%s' % (e, config_file)
+        except ValueError as e:
+            self.logger.error('Error "%s" parsing config=%s' % (e, config_file))
             sys.exit(1)
 
         # Initialize logging
@@ -194,13 +199,13 @@ class Route_Glue2():
                     ts = datetime.strftime(datetime.now(), '%Y-%m-%d_%H:%M:%S')
                     newpath = '%s.%s' % (path, ts)
                     shutil.copy(path, newpath)
-                    print 'SaveDaemonLog as %s' % newpath
+                    print('SaveDaemonLog as ' + newpath)
         except Exception as e:
-            print 'Exception in SaveDaemonLog(%s)' % path
+            print('Exception in SaveDaemonLog({})'.format(path))
         return
 
     def exit_signal(self, signal, frame):
-        self.logger.warning('Caught signal, exiting...')
+        self.logger.error('Caught signal, exiting...')
         sys.exit(0)
 
     def ConnectAmqp_Anonymous(self):
@@ -228,42 +233,41 @@ class Route_Glue2():
 
     def amqp_callback(self, message):
         st = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-        type = message.delivery_info['exchange']
+        doctype = message.delivery_info['exchange']
         tag = message.delivery_tag
-        resource = message.delivery_info['routing_key']
+        resourceid = message.delivery_info['routing_key']
         if self.dest['type'] == 'print':
-            self.dest_print(st, type, resource, message.body)
+            self.dest_print(st, doctype, resourceid, message.body)
         elif self.dest['type'] == 'directory':
-            self.dest_directory(st, type, resource, message.body)
+            self.dest_directory(st, doctype, resourceid, message.body)
         elif self.dest['type'] == 'warehouse':
-            self.dest_warehouse(st, type, resource, message.body)
+            self.dest_warehouse(st, doctype, resourceid, message.body)
         elif self.dest['type'] == 'api':
-            self.dest_restapi(st, type, resource, message.body)
+            self.dest_restapi(st, doctype, resourceid, message.body)
         self.channel.basic_ack(delivery_tag=tag)
 
-    def dest_print(self, st, type, resource, message_body):
-        print('%s exchange=%s, routing_key=%s, size=%s, dest=PRINT' %
-            (st, type, resource, len(message_body) ) )
+    def dest_print(self, st, doctype, resourceid, message_body):
+        print('{} exchange={}, routing_key={}, size={}, dest=PRINT'.format(st, doctype, resourceid, len(message_body) ) )
         if self.dest['obj'] != 'dump':
             return
         try:
             py_data = json.loads(message_body)
-        except ValueError, e:
+        except ValueError as e:
             self.logger.error('Parsing Exception: %s' % (e))
             return
         for key in py_data:
-            print('  Key=%s' % key)
+            print('  Key=' + key)
 
-    def dest_directory(self, st, type, resource, message_body):
-        dir = os.path.join(self.dest['obj'], type)
+    def dest_directory(self, st, doctype, resourceid, message_body):
+        dir = os.path.join(self.dest['obj'], doctype)
         if not os.access(dir, os.W_OK):
-            self.logger.critical('exchange=%s, routing_key=%s, size=%s Directory not writable "%s"' %
-                  (type, resource, len(message_body), dir ) )
+            self.logger.critical('%s exchange=%s, routing_key=%s, size=%s Directory not writable "%s"' %
+                  (st, doctype, resourceid, len(message_body), dir ) )
             return
-        file_name = resource + '.' + st
+        file_name = resourceid + '.' + st
         file = os.path.join(dir, file_name)
-        self.logger.info('exchange=%s, routing_key=%s, size=%s dest=file:<exchange>/%s' %
-                  (type, resource, len(message_body), file_name ) )
+        self.logger.info('%s exchange=%s, routing_key=%s, size=%s dest=file:<exchange>/%s' %
+                  (st, doctype, resourceid, len(message_body), file_name ) )
         with open(file, 'w') as fd:
             fd.write(message_body)
             fd.close()
@@ -321,15 +325,15 @@ class Route_Glue2():
             pa.FinishActivity('Glue2 ProcessingException', 'status={}; response={}'.format(e.status, e.response))
             return
 
-    def dest_restapi(self, st, type, resource, message_body):
-        if type in ['glue2.computing_activity']:
+    def dest_restapi(self, st, doctype, resourceid, message_body):
+        if doctype in ['glue2.computing_activity']:
             self.logger.info('exchange=%s, routing_key=%s, size=%s dest=DROP' %
-                  (type, resource, len(message_body) ) )
+                  (doctype, resourceid, len(message_body) ) )
             return
 
         headers = {'Content-type': 'application/json',
             'Authorization': 'Basic %s' % base64.standard_b64encode( self.config['API_USERID'] + ':' + self.config['API_PASSWORD']) }
-        url = '/glue2-provider-api/v1/process/doctype/%s/resourceid/%s/' % (type, resource)
+        url = '/glue2-provider-api/v1/process/doctype/%s/resourceid/%s/' % (doctype, resourceid)
         if self.dest['host'] not in ['localhost', '127.0.0.1'] and self.dest['port'] != '8000':
             url = '/wh1' + url
         (host, port) = (self.dest['host'].encode('utf-8'), self.dest['port'].encode('utf-8'))
@@ -349,17 +353,17 @@ class Route_Glue2():
                 conn.request('POST', url, message_body, headers)
                 response = conn.getresponse()
                 self.logger.info('RESP exchange=%s, routing_key=%s, size=%s dest=POST http_response=status(%s)/reason(%s)' %
-                    (type, resource, len(message_body), response.status, response.reason ) )
+                    (doctype, resourceid, len(message_body), response.status, response.reason ) )
                 data = response.read()
                 conn.close()
                 break
-            except (socket.error), e:
+            except (socket.error) as e:
                 retries += 1
                 sleepminutes = 2*retries
                 self.logger.error('Exception socket.error to %s:%s; sleeping %s/minutes before retrying' % \
                                   (host, port, sleepminutes))
                 sleep(sleepminutes*60)
-            except (httplib.BadStatusLine), e:
+            except (httplib.BadStatusLine) as e:
                 retries += 1
                 sleepminutes = 2*retries
                 self.logger.error('Exception httplib.BadStatusLine to %s:%s; sleeping %s/minutes before retrying' % \
@@ -376,15 +380,15 @@ class Route_Glue2():
     #        else:
     #            self.logger.error('Response %s' % obj)
     #            raise ValueError('')
-        except ValueError, e:
+        except ValueError as e:
             self.logger.error('API response not in expected format (%s)' % e)
 
-    def dest_direct(self, ts, type, resource, message_body):
+    def dest_direct(self, ts, doctype, resourceid, message_body):
         django.setup()
-        doc = Glue2NewDocument(type, resource, ts)
+        doc = Glue2NewDocument(doctype, resourceid, ts)
         py_data = json.loads(message_body)
         result = doc.process(py_data)
-        print StatsSummary(result)
+        self.logger.info(StatsSummary(result))
 
     def process_file(self, path):
         file_name = path.split('/')[-1]
@@ -392,33 +396,33 @@ class Route_Glue2():
             return
         
         idx = file_name.rfind('.')
-        resource = file_name[0:idx]
+        resourceid = file_name[0:idx]
         ts = file_name[idx+1:len(file_name)]
         with open(path, 'r') as file:
             data=file.read().replace('\n','')
             file.close()
         try:
             py_data = json.loads(data)
-        except ValueError, e:
+        except ValueError as e:
             self.logger.error('Parsing "%s" Exception: %s' % (path, e))
             return
 
         if 'ApplicationEnvironment' in py_data or 'ApplicationHandle' in py_data:
-            type = 'glue2.applications'
+            doctype = 'glue2.applications'
         elif 'ComputingManager' in py_data or 'ComputingService' in py_data or \
             'ExecutionEnvironment' in py_data or 'Location' in py_data or 'ComputingShare' in py_data:
-            type = 'glue2.compute'
+            doctype = 'glue2.compute'
         elif 'ComputingActivity' in py_data:
-            type = 'glue2.computing_activities'
+            doctype = 'glue2.computing_activities'
         else:
             self.logger.error('Document type not recognized: ' + path)
             return
-        self.logger.info('Processing file: %s' % path)
+        self.logger.info('Processing file: ' + path)
 
         if self.dest['type'] == 'api':
-            self.dest_restapi(ts, type, resource, data)
+            self.dest_restapi(ts, doctype, resourceid, data)
         elif self.dest['type'] == 'print':
-            self.dest_print(ts, type, resource, data)
+            self.dest_print(ts, doctype, resourceid, data)
     
     # Where we process
     def run(self):
@@ -426,14 +430,14 @@ class Route_Glue2():
 
         self.logger.info('Starting program=%s pid=%s, uid=%s(%s)' % \
                      (os.path.basename(__file__), os.getpid(), os.geteuid(), pwd.getpwuid(os.geteuid()).pw_name))
-        self.logger.info('Source: %s' % self.src['display'])
-        self.logger.info('Destination: %s' % self.dest['display'])
+        self.logger.info('Source: ' + self.src['display'])
+        self.logger.info('Destination: ' + self.dest['display'])
 
         if self.src['type'] == 'amqp':
             conn = self.ConnectAmqp_UserPass()
             self.channel = conn.channel()
             self.channel.basic_qos(prefetch_size=0, prefetch_count=4, a_global=True)
-            declare_ok = self.channel.queue_declare(self.args.queue, durable=True, auto_delete=False)
+            declare_ok = self.channel.queue_declare(queue=self.args.queue, durable=True, auto_delete=False)
             queue = declare_ok.queue
 #            exchanges = ['glue2.applications', 'glue2.compute', 'glue2.computing_activities']
             exchanges = ['glue2.applications', 'glue2.compute']
