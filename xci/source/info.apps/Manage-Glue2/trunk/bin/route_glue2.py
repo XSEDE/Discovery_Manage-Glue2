@@ -1,26 +1,28 @@
 #!/usr/bin/env python
 
-# Route GLUE2 messages from a source (amqp, file, directory) to a destination (print, directory, api)
+# Route GLUE2 messages
+#   from a source (amqp, file, directory)
+#   to a destination (print, directory, warehouse, api)
 from __future__ import print_function
 from __future__ import print_function
+import amqp
+import argparse
+import base64
+import datetime
+from datetime import datetime
+import json
+import logging
+import logging.handlers
 import os
 import pwd
 import re
-import sys
-import argparse
-import logging
-import logging.handlers
+import shutil
 import signal
-import datetime
-from datetime import datetime
-from time import sleep
-import base64
-import amqp
-import json
 import socket
 import ssl
 from ssl import _create_unverified_context
-import shutil
+import sys
+from time import sleep
 
 try:
     import http.client as httplib
@@ -29,11 +31,7 @@ except ImportError:
 
 import django
 django.setup()
-from django.utils.dateparse import parse_datetime
-from glue2_db.models import *
-from glue2_provider.process import Glue2NewDocument, StatsSummary
-from processing_status.process import ProcessingActivity
-from xsede_warehouse.exceptions import ProcessingException
+from glue2_provider.process import Glue2ProcessRawIPF, StatsSummary
 
 from daemon import runner
 import pdb
@@ -273,59 +271,6 @@ class Route_Glue2():
             fd.write(message_body)
             fd.close()
 
-    def dest_warehouse(self, st, doctype, resourceid, message_body):
-        receivedts = st
-        pa_id = '{}:{}'.format(doctype, resourceid)
-        pa = ProcessingActivity('route_glue2.py', 'dest_warehouse', pa_id, doctype, resourceid)
-        
-        if doctype not in ['glue2.applications', 'glue2.compute', 'glue2.computing_activities']:
-            self.logger.info('Ignoring DocType (DocType=%s, ResourceID=%s, size=%s)' % \
-                             (doctype, resourceid, len(message_body)))
-            pa.FinishActivity('ignored', 'Ignoring DocType=' + doctype)
-            return
-        
-        try:
-            glue2_obj = json.loads(message_body)
-        except ValueError, e:
-            self.logger.error('Error parsing DocType (DocType=%s, ResourceID=%s, size=%s)' % \
-                              (doctype, resourceid, len(message_body)))
-            pa.FinishActivity('document parsing error', e.error_list)
-            return
-        if 'ID' in glue2_obj and glue2_obj['ID'].startswith('urn:glue2:ComputingActivity:'):
-            self.logger.debug('Ignoring DocType (DocType=%s, ResourceID=%s) actually glue2.computing_activity' % \
-                       (doctype, resourceid))
-            pa.FinishActivity('ignored', 'Ignoring DocType=' + doctype)
-            return
-
-        try:
-            model = EntityHistory(DocumentType=doctype, ResourceID=resourceid, ReceivedTime=receivedts, EntityJSON=glue2_obj)
-            model.save()
-            self.logger.info('New GLUE2 EntityHistory.ID=%s DocType=%s ResourceID=%s size=%s' % \
-                       (model.ID, model.DocumentType, model.ResourceID, len(message_body)))
-        except (ValidationError) as e:
-            self.logger.error('Exception on GLUE2 EntityHistory DocType=%s, ResourceID=%s: %s' % \
-                        (model.DocumentType, model.ResourceID, e.error_list))
-            pa.FinishActivity('EntityHistory ValidationError', e.error_list)
-            return
-        except (DataError, IntegrityError) as e:
-            self.logger.error('Exception on GLUE2 EntityHistory (DocType=%s, ResourceID=%s): %s' % \
-                        (model.DocumentType, model.ResourceID, e.error_list))
-            pa.FinishActivity('EntityHistory DataError|IntegrityError', e.error_list)
-            return
-    
-        g2doc = Glue2NewDocument(doctype, resourceid, receivedts, 'EntityHistory.ID=%s' % model.ID)
-        try:
-            response = g2doc.process(glue2_obj)
-#           self.logger.info('RESP exchange=%s, routing_key=%s, size=%s dest=WAREHOUSE status=%s' %
-#                           (doctype, resourceid, len(message_body), 'PROCESSED' ) )
-            pa.FinishActivity('0', 'EntityHistory.ID={}'.format(model.ID))
-            return
-        except ProcessingException, e:
-            self.logger.info('RESP exchange=%s, routing_key=%s, size=%s dest=WAREHOUSE status=%s' %
-                            (doctype, resourceid, len(message_body), (e.response + ';' + e.status) ) )
-            pa.FinishActivity('Glue2 ProcessingException', 'status={}; response={}'.format(e.status, e.response))
-            return
-
     def dest_restapi(self, st, doctype, resourceid, message_body):
         if doctype in ['glue2.computing_activity']:
             self.logger.info('exchange=%s, routing_key=%s, size=%s dest=DROP' %
@@ -384,12 +329,13 @@ class Route_Glue2():
         except ValueError as e:
             self.logger.error('API response not in expected format (%s)' % e)
 
-    def dest_direct(self, ts, doctype, resourceid, message_body):
-        django.setup()
-        doc = Glue2NewDocument(doctype, resourceid, ts)
-        py_data = json.loads(message_body)
-        result = doc.process(py_data)
-        self.logger.info(StatsSummary(result))
+    def dest_warehouse(self, ts, doctype, resourceid, message_body):
+        proc = Glue2ProcessRawIPF(application=os.path.basename(__file__), function='dest_warehouse')
+        (code, message) = proc.process(ts, doctype, resourceid, message_body)
+#        if code is False:
+#            self.logger.error(message)
+#        else:
+#            self.logger.info(message)
 
     def process_file(self, path):
         file_name = path.split('/')[-1]
@@ -444,8 +390,8 @@ class Route_Glue2():
             exchanges = ['glue2.applications', 'glue2.compute']
             for ex in exchanges:
                 self.channel.queue_bind(queue, ex, '#')
+            self.logger.info('AMQP Queue={}, Exchanges=({})'.format(self.args.queue, ', '.join(exchanges)))
             st = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-            self.logger.info('Binding to exchanges=(%s)' % ', '.join(exchanges))
             self.channel.basic_consume(queue,callback=self.amqp_callback)
             while True:
                 self.channel.wait()
