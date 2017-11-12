@@ -23,6 +23,21 @@ delete from glue2.glue2_db_applicationenvironment
 vacuum analyze glue2.glue2_db_applicationenvironment;
 
 /* These don't have children/parents */
+\qecho Purging older than 28 days from glue2.glue2_db_acceleratorenvironment
+delete from glue2.glue2_db_acceleratorenvironment
+  where "CreationTime" < current_timestamp - interval '28 days';
+vacuum analyze glue2.glue2_db_acceleratorenvironment;
+
+\qecho Purging older than 28 days from glue2.glue2_db_accesspolicy
+delete from glue2.glue2_db_accesspolicy
+  where "CreationTime" < current_timestamp - interval '28 days';
+vacuum analyze glue2.glue2_db_accesspolicy;
+
+\qecho Purging older than 28 days from glue2.glue2_db_admindomain
+delete from glue2.glue2_db_admindomain
+  where "CreationTime" < current_timestamp - interval '28 days';
+vacuum analyze glue2.glue2_db_admindomain;
+
 \qecho Purging older than 28 days from glue2.glue2_db_computingactivity
 delete from glue2.glue2_db_computingactivity
   where "CreationTime" < current_timestamp - interval '28 days';
@@ -33,10 +48,30 @@ delete from glue2.glue2_db_computingmanager
   where "CreationTime" < current_timestamp - interval '28 days';
 vacuum analyze glue2.glue2_db_computingmanager;
 
+\qecho Purging older than 28 days from glue2.glue2_db_computingmanageracceleratorinfo
+delete from glue2.glue2_db_computingmanageracceleratorinfo
+  where "CreationTime" < current_timestamp - interval '28 days';
+vacuum analyze glue2.glue2_db_computingmanageracceleratorinfo;
+
+\qecho Purging older than 28 days from glue2.glue2_db_computingqueue
+delete from glue2.glue2_db_computingqueue
+  where "CreationTime" < current_timestamp - interval '28 days';
+vacuum analyze glue2.glue2_db_computingqueue;
+
 \qecho Purging older than 28 days from glue2.glue2_db_computingshare
 delete from glue2.glue2_db_computingshare
   where "CreationTime" < current_timestamp - interval '28 days';
 vacuum analyze glue2.glue2_db_computingshare;
+
+\qecho Purging older than 28 days from glue2.glue2_db_computingshareacceleratorinfo
+delete from glue2.glue2_db_computingshareacceleratorinfo
+  where "CreationTime" < current_timestamp - interval '28 days';
+vacuum analyze glue2.glue2_db_computingshareacceleratorinfo;
+
+\qecho Purging older than 28 days from glue2.glue2_db_contact
+delete from glue2.glue2_db_contact
+  where "CreationTime" < current_timestamp - interval '28 days';
+vacuum analyze glue2.glue2_db_contact;
 
 \qecho Purging older than 28 days from glue2.glue2_db_executionenvironment
 delete from glue2.glue2_db_executionenvironment
@@ -47,6 +82,11 @@ vacuum analyze glue2.glue2_db_executionenvironment;
 delete from glue2.glue2_db_location
   where "CreationTime" < current_timestamp - interval '28 days';
 vacuum analyze glue2.glue2_db_location;
+
+\qecho Purging older than 28 days from glue2.glue2_db_userdomain
+delete from glue2.glue2_db_userdomain
+  where "CreationTime" < current_timestamp - interval '28 days';
+vacuum analyze glue2.glue2_db_userdomain;
 
 \qecho Purging older than 28 days from glue2.monitoring_db_testresult
 delete from glue2.monitoring_db_testresult

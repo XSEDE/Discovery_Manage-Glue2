@@ -386,8 +386,8 @@ class Route_Glue2():
             self.channel.basic_qos(prefetch_size=0, prefetch_count=4, a_global=True)
             declare_ok = self.channel.queue_declare(queue=self.args.queue, durable=True, auto_delete=False)
             queue = declare_ok.queue
-#            exchanges = ['glue2.applications', 'glue2.compute', 'glue2.computing_activities']
-            exchanges = ['glue2.applications', 'glue2.compute']
+            exchanges = ['glue2.applications', 'glue2.compute', 'glue2.computing_activities']
+#            exchanges = ['glue2.applications', 'glue2.compute']
             for ex in exchanges:
                 self.channel.queue_bind(queue, ex, '#')
             self.logger.info('AMQP Queue={}, Exchanges=({})'.format(self.args.queue, ', '.join(exchanges)))
