@@ -1,7 +1,8 @@
 {
-    "SOURCE": "amqp:info1.dyn.xsede.org:5671",
+    "SOURCE": "amqp:infopub.xsede.org:5671",
+    "AMQP_FALLBACK": "amqp:infopub-alt.xsede.org:5671",
     "DESTINATION": "warehouse",
-    "DESTINATION_API": "api:info1.dyn.xsede.org:443",
+    "DESTINATION_API": "api:info.xsede.org:443",
     "AMQP_USERID": "glue2-router",
     "AMQP_PASSWORD": "xxxxxxxxxxxxxxx",
     "API_USERID": "glue2router",
