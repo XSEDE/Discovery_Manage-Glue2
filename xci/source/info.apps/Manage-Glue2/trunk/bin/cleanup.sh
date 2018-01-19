@@ -6,4 +6,4 @@ function main_function
    time psql warehouse glue2_owner <bin/cleanup.sql
 }
 
-main_function | mail -s "GLUE2 weekly cleanup" "navarro@mcs.anl.gov" 2>&1
+main_function 2>&1 | mail -s "GLUE2 weekly cleanup" "navarro@mcs.anl.gov"
