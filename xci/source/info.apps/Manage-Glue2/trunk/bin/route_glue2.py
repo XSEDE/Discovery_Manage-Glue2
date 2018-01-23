@@ -206,7 +206,7 @@ class Route_Glue2():
         return
 
     def exit_signal(self, signal, frame):
-        self.logger.error('Caught signal, exiting...')
+        self.logger.error('Caught signal={}, exiting...'.format(signal))
         sys.exit(0)
 
     def ConnectAmqp_Anonymous(self):
@@ -443,6 +443,7 @@ class Route_Glue2():
     
     def run(self):
         signal.signal(signal.SIGINT, self.exit_signal)
+        signal.signal(signal.SIGTERM, self.exit_signal)
 
         self.logger.info('Starting program=%s pid=%s, uid=%s(%s)' % \
                      (os.path.basename(__file__), os.getpid(), os.geteuid(), pwd.getpwuid(os.geteuid()).pw_name))
