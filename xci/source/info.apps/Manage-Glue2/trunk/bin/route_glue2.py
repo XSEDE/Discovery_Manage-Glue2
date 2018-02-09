@@ -400,8 +400,10 @@ class Route_Glue2():
 
         if 'ApplicationEnvironment' in py_data or 'ApplicationHandle' in py_data:
             doctype = 'glue2.applications'
-        elif 'ComputingManager' in py_data or 'ComputingService' in py_data or \
-            'ExecutionEnvironment' in py_data or 'Location' in py_data or 'ComputingShare' in py_data:
+        elif 'ComputingManager' in py_data or 'ComputingManagerAcceleratorInfo' in py_data or \
+             'ComputingShare' in py_data or 'ComputingShareAcceleratorInfo' in py_data or \
+             'ComputingService' in py_data or 'AcceleratorEnvironment' in py_data or \
+             'ExecutionEnvironment' in py_data or 'Location' in py_data:
             doctype = 'glue2.compute'
         elif 'ComputingActivity' in py_data:
             doctype = 'glue2.computing_activities'
@@ -414,6 +416,10 @@ class Route_Glue2():
             self.dest_restapi(ts, doctype, resourceid, data)
         elif self.dest['type'] == 'print':
             self.dest_print(ts, doctype, resourceid, data)
+        elif self.dest['type'] == 'warehouse':
+            self.dest_warehouse(ts, doctype, resourceid, data)
+        else:
+            self.logger.error('Processing file with unrecognized destination: ' + self.dest['type'])
     
     # Where we process
     def amqp_consume_setup(self):
