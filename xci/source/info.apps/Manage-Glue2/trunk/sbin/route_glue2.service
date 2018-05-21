@@ -12,6 +12,7 @@ PIDFile=/soft/warehouse-apps-1.0/Manage-Glue2/var/route_glue2.pid
 #PrivateTmp=true
 User=software
 Group=admin
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
