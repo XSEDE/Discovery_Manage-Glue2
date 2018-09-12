@@ -222,6 +222,7 @@ class Route_Glue2():
                                userid=self.config['AMQP_USERID'], password=self.config['AMQP_PASSWORD'],
                                heartbeat=120,
                                ssl=ssl_opts)
+            conn.connect()
             return conn
         except Exception as err:
             self.logger.error('AMQP connect to primary error: ' + format(err))
@@ -257,6 +258,7 @@ class Route_Glue2():
                                userid=self.config['AMQP_USERID'], password=self.config['AMQP_PASSWORD'],
                                heartbeat=120,
                                ssl=ssl_opts)
+            conn.connect()
             return conn
         except Exception as err:
             self.logger.error('AMQP connect to alternate error: ' + format(err))
@@ -445,7 +447,7 @@ class Route_Glue2():
             self.channel.queue_bind(queue, ex, '#')
         self.logger.info('AMQP Queue={}, Exchanges=({})'.format(self.args.queue, ', '.join(exchanges)))
         st = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-        self.channel.basic_consume(queue,callback=self.amqp_callback)
+        self.channel.basic_consume(queue, callback=self.amqp_callback)
     
     def run(self):
         signal.signal(signal.SIGINT, self.exit_signal)
@@ -460,7 +462,7 @@ class Route_Glue2():
             self.amqp_consume_setup()
             while True:
                 try:
-                    self.channel.wait()
+                    self.channel.wait(amqp.spec.Connection.Blocked)
                     continue # Loops back to the while
                 except Exception as err:
                     self.logger.error('AMQP channel.wait error: ' + format(err))
