@@ -324,11 +324,12 @@ class Route_Glue2():
             return
 
         headers = {'Content-type': 'application/json',
-            'Authorization': 'Basic %s' % base64.standard_b64encode( self.config['API_USERID'] + ':' + self.config['API_PASSWORD']) }
+            'Authorization': 'Basic %s' % base64.standard_b64encode( (self.config['API_USERID'] + ':' + self.config['API_PASSWORD']).encode() ).decode() }
         url = '/glue2-provider-api/v1/process/doctype/%s/resourceid/%s/' % (doctype, resourceid)
         if self.dest['host'] not in ['localhost', '127.0.0.1'] and self.dest['port'] != '8000':
             url = '/wh1' + url
-        (host, port) = (self.dest['host'].encode('utf-8'), self.dest['port'].encode('utf-8'))
+#        (host, port) = (self.dest['host'].encode('utf-8'), self.dest['port'].encode('utf-8'))
+        (host, port) = (self.dest['host'], self.dest['port'])
         retries = 0
         while retries < 100:
             try:
