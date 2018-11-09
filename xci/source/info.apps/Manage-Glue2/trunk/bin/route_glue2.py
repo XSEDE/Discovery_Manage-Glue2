@@ -61,6 +61,8 @@ class Route_Glue2():
                             help='Configuration file default=./route_glue2.conf')
         parser.add_argument('-q', '--queue', action='store', default='glue2-router', \
                             help='AMQP queue default=glue2-router')
+        parser.add_argument('--nobind', action='store_true', \
+                            help='Do not bind to exchanges')
         parser.add_argument('--verbose', action='store_true', \
                             help='Verbose output')
         parser.add_argument('--daemon', action='store_true', \
@@ -328,6 +330,7 @@ class Route_Glue2():
         url = '/glue2-provider-api/v1/process/doctype/%s/resourceid/%s/' % (doctype, resourceid)
         if self.dest['host'] not in ['localhost', '127.0.0.1'] and self.dest['port'] != '8000':
             url = '/wh1' + url
+#  Updated for Python 3.6 upgrade
 #        (host, port) = (self.dest['host'].encode('utf-8'), self.dest['port'].encode('utf-8'))
         (host, port) = (self.dest['host'], self.dest['port'])
         retries = 0
@@ -443,10 +446,11 @@ class Route_Glue2():
         q = self.args.queue or ''
         declare_ok = self.channel.queue_declare(queue=q, durable=True, auto_delete=False)
         queue = declare_ok.queue
-        exchanges = ['glue2.applications', 'glue2.compute', 'glue2.computing_activities', 'glue2.computing_activity']
-        for ex in exchanges:
-            self.channel.queue_bind(queue, ex, '#')
-        self.logger.info('AMQP Queue={}, Exchanges=({})'.format(self.args.queue, ', '.join(exchanges)))
+        if not self.args.nobind:
+            exchanges = ['glue2.applications', 'glue2.compute', 'glue2.computing_activities', 'glue2.computing_activity']
+            for ex in exchanges:
+                self.channel.queue_bind(queue, ex, '#')
+            self.logger.info('AMQP Queue={}, Exchanges=({})'.format(self.args.queue, ', '.join(exchanges)))
         st = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
         self.channel.basic_consume(queue, callback=self.amqp_callback)
     
