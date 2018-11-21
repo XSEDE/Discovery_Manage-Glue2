@@ -59,7 +59,8 @@ class Route_Glue2():
                             help='Logging level (default=warning)')
         parser.add_argument('-c', '--config', action='store', default='./route_glue2.conf', \
                             help='Configuration file default=./route_glue2.conf')
-        parser.add_argument('-q', '--queue', action='store', default='glue2-router', \
+        # Don't set the default so that we can apply the precedence argument || config || default
+        parser.add_argument('-q', '--queue', action='store', \
                             help='AMQP queue default=glue2-router')
         parser.add_argument('--nobind', action='store_true', \
                             help='Do not bind to exchanges')
@@ -443,14 +444,14 @@ class Route_Glue2():
         self.conn = self.ConnectAmqp_UserPass()
         self.channel = self.conn.channel()
         self.channel.basic_qos(prefetch_size=0, prefetch_count=4, a_global=True)
-        q = self.args.queue or ''
-        declare_ok = self.channel.queue_declare(queue=q, durable=True, auto_delete=False)
+        which_queue = self.args.queue or self.config.get('QUEUE', 'glue2-router')
+        declare_ok = self.channel.queue_declare(queue=which_queue, durable=True, auto_delete=False)
         queue = declare_ok.queue
         if not self.args.nobind:
             exchanges = ['glue2.applications', 'glue2.compute', 'glue2.computing_activities', 'glue2.computing_activity']
             for ex in exchanges:
                 self.channel.queue_bind(queue, ex, '#')
-            self.logger.info('AMQP Queue={}, Exchanges=({})'.format(self.args.queue, ', '.join(exchanges)))
+            self.logger.info('AMQP Queue={}, Exchanges=({})'.format(which_queue, ', '.join(exchanges)))
         st = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
         self.channel.basic_consume(queue, callback=self.amqp_callback)
     
