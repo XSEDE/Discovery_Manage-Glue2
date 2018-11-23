@@ -23,6 +23,7 @@ import ssl
 from ssl import _create_unverified_context
 import sys
 from time import sleep
+import traceback
 
 try:
     import http.client as httplib
@@ -31,6 +32,7 @@ except ImportError:
 
 import django
 django.setup()
+from django.conf import settings
 from glue2_provider.process import Glue2ProcessRawIPF, StatsSummary
 
 from daemon import runner
@@ -161,6 +163,8 @@ class Route_Glue2():
             if not self.dest['port']:
                 self.dest['port'] = '443'
             self.dest['display'] = '%s@%s:%s' % (self.dest['type'], self.dest['host'], self.dest['port'])
+        elif self.dest['type'] == 'warehouse':
+            self.dest['display'] = '{}@database={}'.format(self.dest['type'], settings.DATABASES['default']['HOST'])
         elif self.dest['obj']:
             self.dest['display'] = '%s:%s' % (self.dest['type'], self.dest['obj'])
         else:
@@ -469,9 +473,10 @@ class Route_Glue2():
             while True:
                 try:
                     self.channel.wait(amqp.spec.Connection.Blocked)
-                    continue # Loops back to the while
+#                    continue # Loops back to the while
                 except Exception as err:
-                    self.logger.error('AMQP channel.wait error: ' + format(err))
+                    self.logger.error('AMQP channel.wait error ({}): {}'.format(type(err).__name__, str(err)))
+#                    traceback.print_exception()
                 try:
                     self.conn.close()
                 except Exception as err:
