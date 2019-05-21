@@ -219,7 +219,7 @@ class Route_Glue2():
     #                           heartbeat=2)
 
     def ConnectAmqp_UserPass(self):
-        ssl_opts = {'ca_certs': os.environ.get('X509_USER_CERT')}
+        ssl_opts = {'ca_certs': os.environ.get('X509_USER_CERT'), 'ssl_version': ssl.PROTOCOL_TLSv1_2 }
         try:
             host = '%s:%s' % (self.src['host'], self.src['port'])
             self.logger.info('AMQP connecting to host={} as userid={}'.format(host, self.config['AMQP_USERID']))
