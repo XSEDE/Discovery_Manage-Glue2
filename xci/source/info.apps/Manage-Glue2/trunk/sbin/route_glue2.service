@@ -5,9 +5,9 @@ After=network.target remote-fs.target nss-lookup.target
 [Service]
 Type=forking
 EnvironmentFile=/soft/warehouse-apps-1.0/Manage-Glue2/PROD/sbin/route_glue2.sysconfig
-ExecStart=/soft/warehouse-apps-1.0/Manage-Glue2/PROD/sbin/route_glue2.daemon start
-ExecReload=/soft/warehouse-apps-1.0/Manage-Glue2/PROD/sbin/route_glue2.daemon restart
-ExecStop=/soft/warehouse-apps-1.0/Manage-Glue2/PROD/sbin/route_glue2.daemon stop
+ExecStart=/soft/warehouse-apps-1.0/Manage-Glue2/PROD/sbin/route_glue2.sh start
+ExecReload=/soft/warehouse-apps-1.0/Manage-Glue2/PROD/sbin/route_glue2.sh restart
+ExecStop=/soft/warehouse-apps-1.0/Manage-Glue2/PROD/sbin/route_glue2.sh stop
 PIDFile=/soft/warehouse-apps-1.0/Manage-Glue2/var/route_glue2.pid
 #PrivateTmp=true
 User=software

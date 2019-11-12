@@ -214,16 +214,12 @@ class Route_Glue2():
         self.logger.error('Caught signal={}, exiting...'.format(signal))
         sys.exit(0)
 
-    def ConnectAmqp_Anonymous(self):
-        return amqp.Connection(host='%s:%s' % (self.src['host'], self.src['port']), virtual_host='xsede')
-    #                           heartbeat=2)
-
     def ConnectAmqp_UserPass(self):
         ssl_opts = {'ca_certs': os.environ.get('X509_USER_CERT'), 'ssl_version': ssl.PROTOCOL_TLSv1_2 }
         try:
             host = '%s:%s' % (self.src['host'], self.src['port'])
             self.logger.info('AMQP connecting to host={} as userid={}'.format(host, self.config['AMQP_USERID']))
-            conn = amqp.Connection(host=host, virtual_host='xsede',
+            conn = amqp.Connection(login_method='AMQPLAIN', host=host, virtual_host='xsede',
                                userid=self.config['AMQP_USERID'], password=self.config['AMQP_PASSWORD'],
                                heartbeat=120,
                                ssl=ssl_opts)
@@ -259,7 +255,7 @@ class Route_Glue2():
         try:
             host = '%s:%s' % (self.altsrc['host'], self.altsrc['port'])
             self.logger.info('AMQP connecting to host={} as userid={}'.format(host, self.config['AMQP_USERID']))
-            conn = amqp.Connection(host=host, virtual_host='xsede',
+            conn = amqp.Connection(login_method='AMQPLAIN', host=host, virtual_host='xsede',
                                userid=self.config['AMQP_USERID'], password=self.config['AMQP_PASSWORD'],
                                heartbeat=120,
                                ssl=ssl_opts)
@@ -274,7 +270,7 @@ class Route_Glue2():
         ssl_opts = {'ca_certs': self.config['X509_CACERTS'],
                    'keyfile': '/path/to/key.pem',
                    'certfile': '/path/to/cert.pem'}
-        return amqp.Connection(host='%s:%s' % (self.src['host'], self.src['port']), virtual_host='xsede',
+        return amqp.Connection(login_method='EXTERNAL', host='%s:%s' % (self.src['host'], self.src['port']), virtual_host='xsede',
     #                           heartbeat=2,
                                ssl=ssl_opts)
 
