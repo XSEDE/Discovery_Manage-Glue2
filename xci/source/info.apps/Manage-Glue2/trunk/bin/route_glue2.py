@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Route GLUE2 messages
 #   from a source (amqp, file, directory)
