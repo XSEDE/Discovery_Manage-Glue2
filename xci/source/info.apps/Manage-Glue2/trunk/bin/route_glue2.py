@@ -336,6 +336,7 @@ class Route_Glue2():
                     (doctype, resourceid, len(message_body), response.status, response.reason ) )
                 data = response.read()
                 conn.close()
+                retries = 0 # Success, reset retries
                 break
             except (socket.error) as e:
                 retries += 1
