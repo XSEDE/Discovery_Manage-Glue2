@@ -1,2 +1,5 @@
+tag-1.4-20201113 JP
+  - Improve conf/ *bin/ file names and contents to better support production and (mac) development environments
+
 tag-1.4-20201109 JP
   - Send status to info-serv-alert
